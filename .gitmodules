@@ -1,0 +1,3 @@
+[submodule "reinforcement-learning-an-introduction"]
+	path = reinforcement-learning-an-introduction
+	url = git@github.com:mohammedaouamri5/reinforcement-learning-an-introduction.git
