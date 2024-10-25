@@ -3,7 +3,25 @@ import gym
 import numpy
 import numpy as np
 import pygame
+import torch
 from gym import spaces
+
+ACTIONS = list(
+    iter(
+        torch.tensor(
+            [
+                [[1, 0]],
+                [[-1, 0]],
+                [[0, 1]],
+                [[1, 1]],
+                [[-1, 1]],
+                [[-1, -1]],
+                [[1, -1]],
+                [[0, -1]],
+            ]
+        )
+    )
+)
 
 
 class Point:
@@ -62,8 +80,8 @@ class DroneEnv(gym.Env):
     def _mkobservation(self) -> np.ndarray:
         # Observation is the flattened grid + drone's x and y position
         observation = self.field.grid.flatten().tolist()
-        # observation.append(float(self.drone.position.x))
-        # observation.append(float(self.drone.position.y))
+        observation.append(float(self.drone.position.x))
+        observation.append(float(self.drone.position.y))
         return np.array(observation, dtype=np.float32)
 
     def _regularize(self, action):
@@ -93,23 +111,25 @@ class DroneEnv(gym.Env):
             self._regularize(action[0]),
             self._regularize(action[1]),
         )
+        print("-------------------------------------")
         print("action", action)
         print("from", self.drone.position)
         self.drone.position = self.drone.position + action
         print(" to ", self.drone.position)
         if self.drone_in_field():
-
+            reward = self.field.grid.sum(axis=1).sum(axis=0)
             if self.field.grid[self.drone.position.x, self.drone.position.y] == 1:
-                reward -= 100.0
+                reward = -10.0
 
             self.limit -= 1
             self.field.grid[self.drone.position.x, self.drone.position.y] = 1
             done = not np.any(self.field.grid == 0)
             if done:
-                reward += 100.0
+                reward += 10.0
         else:
-            reward -= (self.field.len - self.field.grid.sum()) * 10.0
+            reward = -100.0
             done = True
+
         print("reword", reward)
         print("-------------------------------------")
         return (
@@ -132,8 +152,6 @@ class DroneEnv(gym.Env):
         return self._mkobservation()
 
     def render(self, mode="human"):
-
-        # Clear the screen
         self.init_screen()
         self.screen.fill((0, 0, 0))  # Fill with black
         pygame.time.delay(100)
